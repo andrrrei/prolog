@@ -1,0 +1,194 @@
+% 9. sort (L1, L2)
+
+% Базовый случай
+sort([], []).
+
+% Рекурсивный случай - сортируем хвост и вставляем туда голову
+sort([Head|Tail], SortedList) :-
+    sort(Tail, SortedTail),
+    insert(Head, SortedTail, SortedList).
+
+% insert/3 вставляет элемент в отсортированный список
+insert(X, [], [X]).
+
+insert(X, [Y|Tail], [X, Y|Tail]) :-
+    X =< Y.
+
+insert(X, [Y|Tail], [Y|ResultTail]) :-
+    X > Y,
+    insert(X, Tail, ResultTail).
+
+
+% 10. subset (M1, М2)
+% Базовый случай
+subset([], _).
+
+% Рекурсивный случай
+% 1. Элемент X включен в подмножество, тогда он должен принадлежать M2
+subset([X|Xs], M2) :-
+    member(X, M2),
+    subset(Xs, M2).
+
+% 2. Элемент X не включен в подмножество, тогда рекурсивно проверяем с оставшимися элементами
+subset([_|Xs], M2) :-
+    subset(Xs, M2).
+
+
+% 11. intersection (M1, M2, M3)
+
+% iii, iio
+
+% Базовый случай
+intersection([], _, []).
+intersection(_, [], []).
+
+% Основной случай
+intersection([X|Rest1], List2, [X|RestIntersection]) :-
+    member(X, List2),
+    !, % отсечение, чтобы остановить поиск других решений для X
+    intersection(Rest1, List2, RestIntersection).
+
+intersection([_|Rest1], List2, RestIntersection) :-
+    intersection(Rest1, List2, RestIntersection). % X не подходит, продолжаем с остальными элементами
+
+% Перестановка списка
+permute([], []).
+
+permute([X|Tail], Result) :- % рекурсивно находим перестановки хвоста
+    permute(Tail, PermTail),
+    insert(X, PermTail, Result).
+
+% Вставляем X во все возможные позиции в списке
+insert(X, List, [X|List]).
+insert(X, [Y|Rest], [Y|InsertedRest]) :-
+    insert(X, Rest, InsertedRest).
+
+% Основная функция
+main_inter(List1, List2, Result) :-
+    intersection(List1, List2, Intersected), % пересечение списков
+    permute(Intersected, Result), % перестановки пересечения
+    !. % отсечение для предотвращения лишних решений
+
+
+% 16. path(X, Y, L)
+
+% Начинаем поиск с вершины X
+path(X, Y, Path) :-
+    path(X, Y, [X], PathRev),
+    reverse(PathRev, Path).
+
+% Базовый случай
+path(Y, Y, Visited, Visited).
+
+% Рекурсивный случай
+path(Current, Y, Visited, Path) :-
+    edge(Current, Next, _),
+    \+ member(Next, Visited),
+    path(Next, Y, [Next|Visited], Path).
+
+% Учитываем ребра в обратном направлении
+path(Current, Y, Visited, Path) :-
+    edge(Next, Current, _),
+    \+ member(Next, Visited),
+    path(Next, Y, [Next|Visited], Path).
+
+
+% 17. min_path(X, Y, L)
+
+% iii, iio
+
+% Кратчайший путь и его стоимость
+min_path(Start, End, Answer) :-
+    findall((Path, Cost), 
+            (path(Start, End, Path), path_cost(Path, Cost)), 
+            Paths),
+    min_cost_path(Paths, Answer).
+
+% Вычисление стоимости
+path_cost([_], 0).
+
+path_cost([X, Y | Rest], TotalCost) :-
+    path_cost([Y | Rest], RemainingCost),
+    edge_cost(X, Y, EdgeCost),
+    TotalCost is RemainingCost + EdgeCost.
+
+% Минимальный путь по стоимости
+min_cost_path([PathWithCost], PathWithCost).
+
+min_cost_path([(Path, Cost) | Rest], (MinPath, MinCost)) :-
+    min_cost_path(Rest, (RestMinPath, RestMinCost)),
+    (Cost =< RestMinCost -> 
+        (MinPath, MinCost) = (Path, Cost) 
+    ; 
+        (MinPath, MinCost) = (RestMinPath, RestMinCost)
+    ).
+
+% Стоимость ребра между двумя вершинами
+edge_cost(X, Y, Cost) :- 
+    checkEdge(X, Y, Cost).
+
+
+% 18. short_path(X, Y, L)
+
+% iii, iio - det
+
+% Кратчайший путь от X до Y
+short_path(X, Y, Path) :-
+    bfs([[X]], Y, RevPath), % Запускаем BFS
+    reverse(RevPath, Path). % Переворачиваем путь, чтобы получить его от начала до конца
+
+% BFS для поиска пути
+bfs([[Y|Path]|_], Y, [Y|Path]) :- !.
+
+bfs([CurrentPath|OtherPaths], Y, ResultPath) :-
+    extend_path(CurrentPath, NewPaths), % Расширяем текущий путь
+    append(OtherPaths, NewPaths, AllPaths), % Добавляем новые пути к очереди
+    bfs(AllPaths, Y, ResultPath).
+
+extend_path([X|Path], NewPaths) :-
+    findall([Z, X | Path], 
+            (checkEdge(X, Z, _)), 
+            NewPaths).
+
+
+19. cyclic
+
+cyclic :-
+    edge(Node1, Node2, _),
+    path(Node1, Node2, Path),
+    Path \= [Node1, Node2],
+    % Отсечение для прекращения поиска после обнаружения цикла
+    !.
+
+
+20. is_connected
+
+is_connected :-
+    findall(V, (edge(V, _, _) ; edge(_, V, _)), VerticesDup),
+    sort(VerticesDup, Vertices),
+    Vertices = [StartVertex|_],
+    % Выполняем обход графа из стартовой вершины
+    reachable_nodes(StartVertex, Reachable),
+    % Сравниваем список посещенных вершин со списком всех вершин
+    sort(Reachable, ReachableSorted),
+    ReachableSorted = Vertices.
+
+% reachable_nodes/2 выполняет обход графа, собирая все достижимые вершины
+reachable_nodes(Start, Reachable) :-
+    reachable_nodes([Start], [], Reachable).
+
+% Базовый случай
+reachable_nodes([], Visited, Visited).
+
+% Рекурсивный случай - обход графа в ширину
+reachable_nodes([Current|ToVisit], Visited, Reachable) :-
+    member(Current, Visited),
+    reachable_nodes(ToVisit, Visited, Reachable).
+
+reachable_nodes([Current|ToVisit], Visited, Reachable) :-
+    \+ member(Current, Visited),
+    % Находим всех соседей текущей вершины
+    findall(Neighbor, (edge(Current, Neighbor, _) ; edge(Neighbor, Current, _)), Neighbors),
+    append(ToVisit, Neighbors, NewToVisit),
+    reachable_nodes(NewToVisit, [Current|Visited], Reachable).
+
