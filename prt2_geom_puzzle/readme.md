@@ -62,11 +62,8 @@ This project is a Prolog-based system designed to generate and solve **geometric
 
 ## How to Run the Project
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/geometric-puzzle-generator.git
-   cd geometric-puzzle-generator
-2. **Install Prolog (if not already installed):**
+1. **Clone the repository**
+2. **Install Prolog:**
     ```bash
     sudo apt install swi-prolog
 3. Run the project using the start.pl file:
